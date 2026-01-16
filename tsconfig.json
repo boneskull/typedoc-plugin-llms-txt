@@ -12,8 +12,10 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "checkJs": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "test/**/*", "*.js", ".*.js"],
   "exclude": ["node_modules", "dist"]
 }
