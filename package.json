@@ -1,15 +1,14 @@
 {
-  "name": "packagename",
+  "name": "typedoc-plugin-llms-txt",
   "version": "0.0.0",
   "type": "module",
-  "description": "Shankle short loin porchetta strip steak tongue drumstick shoulder shank turkey pork loin picanha flank.",
+  "description": "TypeDoc plugin to generate llms.txt files for LLM consumption",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/boneskull/packagename.git"
+    "url": "git+https://github.com/boneskull/typedoc-plugin-llms-txt.git"
   },
   "author": "Christopher Hiller <boneskull@boneskull.com> (https://boneskull.com/)",
   "license": "BlueOak-1.0.0",
-  "private": true,
   "engines": {
     "node": ">=22.0.0"
   },
@@ -25,11 +24,20 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "dist"
+    "CHANGELOG.md",
+    "dist",
+    "src"
   ],
-  "keywords": [],
+  "keywords": [
+    "typedoc",
+    "typedoc-plugin",
+    "llms",
+    "llms.txt",
+    "ai",
+    "documentation"
+  ],
   "scripts": {
-    "build": "zshy",
+    "build": "tsc",
     "commitlint": "commitlint",
     "fix": "run-s -sl fix:*",
     "fix:eslint": "eslint --fix .",
@@ -48,6 +56,9 @@
     "test": "run-s test:runtime",
     "test:runtime": "node --import tsx --test --test-reporter=spec \"test/**/*.test.ts\"",
     "test:watch": "node --import tsx --test --test-reporter=spec --watch \"test/**/*.test.ts\""
+  },
+  "peerDependencies": {
+    "typedoc": ">=0.28.16"
   },
   "devDependencies": {
     "@commitlint/cli": "20.2.0",
@@ -70,11 +81,10 @@
     "prettier": "3.7.4",
     "prettier-plugin-jsdoc": "1.8.0",
     "prettier-plugin-pkg": "0.21.2",
-    "prettier-plugin-sort-json": "4.1.1",
     "tsx": "4.21.0",
+    "typedoc": "0.28.16",
     "typescript": "5.9.3",
-    "typescript-eslint": "8.51.0",
-    "zshy": "0.6.0"
+    "typescript-eslint": "8.51.0"
   },
   "knip": {
     "ignoreDependencies": [
@@ -110,16 +120,9 @@
     "jsdocPreferCodeFences": true,
     "plugins": [
       "prettier-plugin-jsdoc",
-      "prettier-plugin-pkg",
-      "prettier-plugin-sort-json"
+      "prettier-plugin-pkg"
     ],
     "singleQuote": true,
     "tsdoc": true
-  },
-  "zshy": {
-    "exports": {
-      ".": "./src/index.ts",
-      "./package.json": "./package.json"
-    }
   }
 }

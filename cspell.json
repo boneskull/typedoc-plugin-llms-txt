@@ -40,7 +40,10 @@
     "wscript",
     "bahmutov",
     "huskyrc",
-    "commitlintrc"
+    "commitlintrc",
+    "llms",
+    "myproject",
+    "unconfigured"
   ],
-  "words": ["shankle", "picanha", "bupkis", "andouille"]
+  "words": ["bupkis"]
 }
