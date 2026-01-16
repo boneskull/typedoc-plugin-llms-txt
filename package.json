@@ -37,7 +37,7 @@
     "documentation"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "commitlint": "commitlint",
     "fix": "run-s -sl fix:*",
     "fix:eslint": "eslint --fix .",
