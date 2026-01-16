@@ -213,7 +213,7 @@ export const discoverSections = (
  * @param name - The name to convert
  * @returns URL-safe path segment
  */
-export const nameToUrlPath = (name: string): string => {
+const nameToUrlPath = (name: string): string => {
   // Replace special characters that TypeDoc escapes in URLs
   return name.replace(/[/@]/g, '_');
 };

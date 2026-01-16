@@ -63,10 +63,7 @@ export const findSlots = (template: string): TemplateSlot[] => {
  * @param content - Full llms.txt content
  * @returns Rendered slot content
  */
-export const renderSlot = (
-  slot: TemplateSlot,
-  content: LlmsTxtContent,
-): string => {
+const renderSlot = (slot: TemplateSlot, content: LlmsTxtContent): string => {
   switch (slot) {
     case 'declarations':
       return renderDeclarations(content.declarations);
