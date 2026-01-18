@@ -12,6 +12,8 @@ A TypeDoc plugin that generates `llms.txt` files for LLM consumption.
 npm install typedoc-plugin-llms-txt typedoc -D
 ```
 
+> `typedoc` v0.28.0 or later is a required peer dependency.
+
 ## Usage
 
 Add the plugin to your TypeDoc configuration:

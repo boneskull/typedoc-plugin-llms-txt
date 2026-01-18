@@ -58,7 +58,7 @@
     "test:watch": "node --import tsx --test --test-reporter=spec --watch \"test/**/*.test.ts\""
   },
   "peerDependencies": {
-    "typedoc": ">=0.28.16"
+    "typedoc": "^0.28.0"
   },
   "devDependencies": {
     "@commitlint/cli": "20.2.0",
