@@ -4,10 +4,16 @@
  * @packageDocumentation
  */
 
-import type { Application, ProjectReflection } from 'typedoc';
+import type {
+  Application,
+  DeclarationReflection,
+  ProjectReflection,
+  Router,
+} from 'typedoc';
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { ReflectionKind } from 'typedoc';
 
 import type {
   LlmsTxtDeclaration,
@@ -138,8 +144,112 @@ export const titleToUrlPath = (title: string): string => {
 };
 
 /**
- * Discovers sections from project documents
+ * Discovers sections from project document reflections using the router for
+ * URLs
  *
+ * This is the preferred method as it uses TypeDoc's parsed document reflections
+ * and the router for correct URL generation regardless of router
+ * configuration.
+ *
+ * @function
+ * @param project - TypeDoc project reflection
+ * @param router - TypeDoc router for URL generation
+ * @param sectionConfig - User-provided section configuration
+ * @param baseUrl - Base URL for links (prepended to router-generated paths)
+ * @returns Array of sections with their documents
+ */
+export const discoverSectionsFromProject = (
+  project: ProjectReflection,
+  router: Router,
+  sectionConfig: Record<string, LlmsTxtSectionConfig>,
+  baseUrl: string,
+): Section[] => {
+  const sectionMap = new Map<string, DocumentInfo[]>();
+
+  // Collect documents from the project and all its children recursively
+  const collectDocuments = (
+    reflection: DeclarationReflection | ProjectReflection,
+  ) => {
+    if (reflection.documents) {
+      for (const doc of reflection.documents) {
+        // Get the category from the document's frontmatter
+        // TypeDoc stores the parsed frontmatter in doc.frontmatter
+        let category: string | undefined;
+
+        // Check if document has a category in its frontmatter
+        if (
+          doc.frontmatter &&
+          typeof doc.frontmatter.category === 'string' &&
+          doc.frontmatter.category
+        ) {
+          category = doc.frontmatter.category;
+        }
+
+        // Fallback: check for @category block tag in the document's comment
+        if (!category && doc.comment?.blockTags) {
+          const categoryTag = doc.comment.blockTags.find(
+            (tag) => tag.tag === '@category',
+          );
+          if (categoryTag) {
+            category = categoryTag.content
+              .map((part) => part.text)
+              .join('')
+              .trim();
+          }
+        }
+
+        // Fallback: use a default category for documents without one
+        if (!category) {
+          category = 'Documentation';
+        }
+
+        if (!sectionMap.has(category)) {
+          sectionMap.set(category, []);
+        }
+
+        // Use the router to get the correct URL
+        const urlPath = router.getFullUrl(doc);
+        sectionMap.get(category)!.push({
+          category,
+          path: baseUrl ? `${baseUrl}/${urlPath}` : urlPath,
+          title: doc.name,
+        });
+      }
+    }
+
+    // Recursively check children (for modules that may have their own documents)
+    if ('children' in reflection && reflection.children) {
+      for (const child of reflection.children) {
+        collectDocuments(child);
+      }
+    }
+  };
+
+  collectDocuments(project);
+
+  // Convert to sections array with ordering
+  const sections: Section[] = [];
+  let autoOrder = 1000; // High default for unconfigured sections
+
+  for (const [category, documents] of sectionMap) {
+    const config = sectionConfig[category];
+    sections.push({
+      displayName: config?.displayName ?? category,
+      documents: documents.sort((a, b) => a.title.localeCompare(b.title)),
+      name: category,
+      order: config?.order ?? autoOrder++,
+    });
+  }
+
+  // Sort by order
+  return sections.sort((a, b) => a.order - b.order);
+};
+
+/**
+ * Discovers sections from project documents by reading files from disk
+ *
+ * @deprecated Use {@link discoverSectionsFromProject} instead, which uses
+ *   TypeDoc's router for correct URL generation.
  * @function
  * @param projectDocuments - Paths to project document files
  * @param sectionConfig - User-provided section configuration
@@ -207,41 +317,67 @@ export const discoverSections = (
 };
 
 /**
- * Converts a module/symbol name to a URL-safe path segment
+ * Gets a human-readable description for a reflection based on its kind
  *
  * @function
- * @param name - The name to convert
- * @returns URL-safe path segment
+ * @param reflection - The reflection to describe
+ * @returns Human-readable kind description
  */
-const nameToUrlPath = (name: string): string => {
-  // Replace special characters that TypeDoc escapes in URLs
-  return name.replace(/[/@]/g, '_');
+const getKindDescription = (reflection: DeclarationReflection): string => {
+  switch (reflection.kind) {
+    case ReflectionKind.Accessor:
+      return 'accessor';
+    case ReflectionKind.Class:
+      return 'class';
+    case ReflectionKind.Enum:
+      return 'enum';
+    case ReflectionKind.Function:
+      return 'function';
+    case ReflectionKind.Interface:
+      return 'interface';
+    case ReflectionKind.Module:
+      return 'module';
+    case ReflectionKind.Namespace:
+      return 'namespace';
+    case ReflectionKind.TypeAlias:
+      return 'type alias';
+    case ReflectionKind.Variable:
+      return 'variable';
+    default:
+      return 'declaration';
+  }
 };
 
 /**
- * Auto-generates declarations from entry points
+ * Auto-generates declarations from project children using the router for URLs
+ *
+ * This function generates API declarations for all top-level children of the
+ * project. These may be modules (for multi-entry-point projects) or direct
+ * exports (for single-entry-point projects).
  *
  * @function
  * @param project - TypeDoc project reflection
- * @param baseUrl - Base URL for links
+ * @param router - TypeDoc router for URL generation
+ * @param baseUrl - Base URL for links (prepended to router-generated paths)
  * @returns Array of resolved declarations
  */
 export const autoGenerateDeclarations = (
   project: ProjectReflection,
+  router: Router,
   baseUrl: string,
 ): ResolvedDeclaration[] => {
   const declarations: ResolvedDeclaration[] = [];
 
-  // Get entry points from the project's children (modules)
   if (project.children) {
     for (const child of project.children) {
-      // Generate URL using kind-dir router pattern: modules/{moduleName}/
-      const urlPath = `modules/${nameToUrlPath(child.name)}/`;
+      // Use the router to get the correct URL for this reflection
+      const urlPath = router.getFullUrl(child);
+      const kindDesc = getKindDescription(child);
 
       declarations.push({
-        description: `${child.name} module`,
+        description: `${child.name} ${kindDesc}`,
         label: child.name,
-        url: `${baseUrl}/${urlPath}`,
+        url: baseUrl ? `${baseUrl}/${urlPath}` : urlPath,
       });
     }
   }
@@ -250,55 +386,26 @@ export const autoGenerateDeclarations = (
 };
 
 /**
- * Gets the URL kind prefix for a reflection based on its kind
+ * Resolves declaration references to URLs using the router
  *
- * @function
- * @param reflection - The reflection to get URL kind for
- * @returns URL kind prefix (e.g., 'functions', 'classes', 'variables')
- */
-const getUrlKindPrefix = (reflection: { kind: number }): string => {
-  // TypeDoc ReflectionKind values (from typedoc)
-  const kindMap: Record<number, string> = {
-    1: 'projects', // Project
-    2: 'modules', // Module
-    4: 'namespaces', // Namespace
-    8: 'enums', // Enum
-    16: 'enums', // EnumMember (nested under enum)
-    32: 'variables', // Variable
-    64: 'functions', // Function
-    128: 'classes', // Class
-    256: 'interfaces', // Interface
-    512: 'constructors', // Constructor
-    1024: 'properties', // Property
-    2048: 'functions', // Method
-    4096: 'functions', // CallSignature
-    8192: 'functions', // IndexSignature
-    16384: 'functions', // ConstructorSignature
-    32768: 'functions', // Parameter
-    65536: 'types', // TypeLiteral
-    131072: 'types', // TypeParameter
-    262144: 'functions', // Accessor
-    524288: 'functions', // GetSignature
-    1048576: 'functions', // SetSignature
-    2097152: 'types', // TypeAlias
-    4194304: 'variables', // Reference
-  };
-  return kindMap[reflection.kind] ?? 'variables';
-};
-
-/**
- * Resolves declaration references to URLs
+ * Declaration references use TypeDoc's format:
+ *
+ * - `moduleName!` - Reference to a module/entry point
+ * - `moduleName!symbolName` - Reference to a symbol within a module
+ * - `moduleName!symbolName.member` - Reference to a nested member
  *
  * @function
  * @param declarations - User-provided declaration configs
  * @param project - TypeDoc project reflection
- * @param app - TypeDoc application
- * @param baseUrl - Base URL for links
+ * @param router - TypeDoc router for URL generation
+ * @param app - TypeDoc application (for logging)
+ * @param baseUrl - Base URL for links (prepended to router-generated paths)
  * @returns Array of resolved declarations
  */
 export const resolveDeclarations = (
   declarations: LlmsTxtDeclaration[],
   project: ProjectReflection,
+  router: Router,
   app: Application,
   baseUrl: string,
 ): ResolvedDeclaration[] => {
@@ -309,29 +416,24 @@ export const resolveDeclarations = (
     // Format: "module!" or "module!symbol" or "module!symbol.member"
     const ref = decl.ref;
 
-    // Try to resolve the reference
-    let url: string | undefined;
+    // Try to resolve the reference to a reflection
+    let reflection: DeclarationReflection | undefined;
 
     if (ref.endsWith('!')) {
-      // Module reference (e.g., "bupkis!")
+      // Module/entry point reference (e.g., "bupkis!")
       const moduleName = ref.slice(0, -1);
-      const moduleReflection = project.children?.find(
-        (c) => c.name === moduleName,
-      );
-      if (moduleReflection) {
-        url = `modules/${nameToUrlPath(moduleName)}/`;
-      }
+      reflection = project.children?.find((c) => c.name === moduleName);
     } else if (ref.includes('!')) {
-      // Symbol reference (e.g., "bupkis!expect")
+      // Symbol reference (e.g., "bupkis!expect" or "bupkis!MyClass.method")
       const [moduleName, symbolPath] = ref.split('!');
       const moduleReflection = project.children?.find(
         (c) => c.name === moduleName,
       );
 
       if (moduleReflection) {
-        // Navigate to the symbol
+        // Navigate to the symbol through the path
         const parts = symbolPath.split('.');
-        let current: typeof moduleReflection | undefined = moduleReflection;
+        let current: DeclarationReflection | undefined = moduleReflection;
 
         for (const part of parts) {
           current = current?.children?.find((c) => c.name === part);
@@ -340,20 +442,17 @@ export const resolveDeclarations = (
           }
         }
 
-        if (current) {
-          // Generate URL using kind-dir router pattern
-          const kindPrefix = getUrlKindPrefix(current);
-          const fullName = `${moduleName}.${symbolPath}`;
-          url = `${kindPrefix}/${nameToUrlPath(fullName)}/`;
-        }
+        reflection = current;
       }
     }
 
-    if (url) {
+    if (reflection) {
+      // Use the router to get the correct URL
+      const urlPath = router.getFullUrl(reflection);
       resolved.push({
         description: decl.description,
         label: decl.label,
-        url: `${baseUrl}/${url}`,
+        url: baseUrl ? `${baseUrl}/${urlPath}` : urlPath,
       });
     } else {
       // Fallback: log warning and skip

@@ -141,3 +141,8 @@ vite.config.ts.timestamp-*
 .vite/
 
 dist/
+
+# Example project generated files
+example/docs-output/
+example/node_modules/
+example/package-lock.json

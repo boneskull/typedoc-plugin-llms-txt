@@ -92,7 +92,8 @@
     ],
     "ignore": [
       "**/*.d.ts",
-      ".worktrees/**/*"
+      ".worktrees/**/*",
+      "example/**/*"
     ],
     "tags": [
       "-knipignore"
