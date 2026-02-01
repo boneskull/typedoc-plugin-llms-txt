@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/boneskull/typedoc-plugin-llms-txt/compare/typedoc-plugin-llms-txt-v0.1.1...typedoc-plugin-llms-txt-v0.1.2) (2026-02-01)
+
+
+### Bug Fixes
+
+* use TypeDoc router API for URL generation ([#3](https://github.com/boneskull/typedoc-plugin-llms-txt/issues/3)) ([61bd607](https://github.com/boneskull/typedoc-plugin-llms-txt/commit/61bd607540ba6bec82cb1ec6a6594b3b969cf2d5))
+
 ## [0.1.1](https://github.com/boneskull/typedoc-plugin-llms-txt/compare/typedoc-plugin-llms-txt-v0.1.0...typedoc-plugin-llms-txt-v0.1.1) (2026-01-18)
 
 

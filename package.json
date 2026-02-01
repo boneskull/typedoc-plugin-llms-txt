@@ -1,6 +1,6 @@
 {
   "name": "typedoc-plugin-llms-txt",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "description": "TypeDoc plugin to generate llms.txt files for LLM consumption",
   "repository": {
