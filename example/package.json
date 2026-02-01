@@ -1,0 +1,16 @@
+{
+  "name": "example-lib",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Example project for testing typedoc-plugin-llms-txt",
+  "private": true,
+  "scripts": {
+    "docs": "typedoc",
+    "docs:kind-dir": "typedoc --router kind-dir",
+    "docs:structure": "typedoc --router structure"
+  },
+  "devDependencies": {
+    "typedoc": "^0.28.0",
+    "typescript": "^5.0.0"
+  }
+}

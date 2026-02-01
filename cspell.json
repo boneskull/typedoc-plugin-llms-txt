@@ -25,6 +25,8 @@
     "coverage",
     "dist",
     "docs",
+    "example/docs-output",
+    "example/node_modules",
     "node_modules",
     "worktrees",
     ".git"
